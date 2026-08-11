@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}The Networked Maryland Manual{% endblock %}</title>
+<link rel="stylesheet" href="{{ root }}style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="{{ root }}index.html">The Networked Maryland Manual</a>
+  <nav>
+    <a href="{{ root }}index.html">Browse</a>
+    <a href="{{ root }}explorer.html">Network explorer</a>
+  </nav>
+  <div class="search">
+    <input type="search" id="q" placeholder="Search counties, agencies, people…" autocomplete="off">
+    <ul id="results" class="results" hidden></ul>
+  </div>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+<footer class="sitefoot">
+  <p>Data extracted from the <a href="https://msa.maryland.gov/msa/mdmanual/html/mmtoc.html">Maryland Manual On-Line</a>,
+  Maryland State Archives. Every connection links back to its source page.
+  This is a research prototype, not an official publication.</p>
+</footer>
+<script>window.SEARCH_URL = "{{ root }}data/search.json"; window.ROOT = "{{ root }}";</script>
+<script src="{{ root }}app.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

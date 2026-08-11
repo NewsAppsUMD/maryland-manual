@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ ent.name }} — Networked Maryland Manual{% endblock %}
+{% block content %}
+<article class="entity">
+  <div class="crumbs"><a href="{{ root }}index.html">Browse</a> ›
+    <span>{{ type_label }}</span></div>
+
+  <header class="entity-head">
+    <span class="badge badge-{{ ent.type }}">{{ type_label }}</span>
+    <h1>{{ ent.name }}</h1>
+    <p class="lede">{{ conn_count }} connection{{ 's' if conn_count != 1 else '' }}
+      in the network{% if ent.level %} · {{ ent.level }} level{% endif %}.</p>
+  </header>
+
+  {% if facts %}
+  <dl class="facts">
+    {% for label, value in facts %}
+      <div><dt>{{ label }}</dt>
+      <dd>{% if label == 'Website' %}<a href="{{ value }}">{{ value }}</a>{% else %}{{ value }}{% endif %}</dd></div>
+    {% endfor %}
+  </dl>
+  {% endif %}
+
+  {% if not panels %}
+    <p class="empty">No extracted connections yet for this entity.</p>
+  {% endif %}
+
+  <div class="panels">
+  {% for panel in panels %}
+    <section class="panel">
+      <h2>{{ panel.title }} <span class="count">{{ panel["items"]|length }}</span></h2>
+      <ul>
+      {% for item in panel["items"] %}
+        <li class="conn">
+          <a class="conn-name" href="{{ item.href }}">{{ item.name }}</a>
+          {% if item.meta %}<span class="conn-meta">{{ item.meta }}</span>{% endif %}
+          {% if item.evidence %}
+            <details class="evidence">
+              <summary>evidence</summary>
+              <blockquote>“{{ item.evidence }}”
+                {% if item.method %}<span class="method method-{{ item.method }}">{{ item.method }}</span>{% endif %}
+                {% if item.provenance %}<a class="src" href="{{ item.provenance }}">source ↗</a>{% endif %}
+              </blockquote>
+            </details>
+          {% endif %}
+        </li>
+      {% endfor %}
+      </ul>
+    </section>
+  {% endfor %}
+  </div>
+
+  {% if ent.url %}
+  <p class="orig"><a href="{{ ent.url }}">View this entity in the original Maryland Manual ↗</a></p>
+  {% endif %}
+</article>
+{% endblock %}

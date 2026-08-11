@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Network explorer — Networked Maryland Manual{% endblock %}
+{% block content %}
+<section class="explorer">
+  <div class="explorer-controls">
+    <h1>Network explorer</h1>
+    <p class="muted">Drag to reposition · scroll to zoom · click a node to open it.
+      Start typed by the filters below.</p>
+    <div class="filters">
+      <strong>Edge types</strong>
+      {% for et in edge_types %}
+        <label><input type="checkbox" class="etype" value="{{ et }}"
+          {{ 'checked' if et != 'contains' else '' }}> {{ et.replace('_',' ') }}</label>
+      {% endfor %}
+    </div>
+    <div class="filters">
+      <strong>Focus</strong>
+      <input type="search" id="focus" placeholder="type an entity name…" autocomplete="off">
+      <button id="reset">Show all typed edges</button>
+    </div>
+    <p class="muted" id="graphstat"></p>
+  </div>
+  <canvas id="graph" width="900" height="640"></canvas>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>window.GRAPH_URL = "data/graph.json";</script>
+<script src="explorer.js"></script>
+{% endblock %}

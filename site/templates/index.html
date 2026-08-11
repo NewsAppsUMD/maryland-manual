@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>Maryland government as a network</h1>
+  <p class="hero-sub">The Maryland Manual, reorganized around the connections
+    between counties, municipalities, and state agencies — built for reporters.
+    Every entity leads with its relationships, and every relationship links back
+    to its source.</p>
+  <div class="stats">
+    <div><strong>{{ counts.get('county', 0) }}</strong> counties</div>
+    <div><strong>{{ counts.get('municipality', 0) }}</strong> municipalities</div>
+    <div><strong>{{ (counts.get('department', 0) + counts.get('agency', 0)) }}</strong> state agencies</div>
+    <div><strong>{{ total_edges }}</strong> connections</div>
+  </div>
+  <p><a class="cta" href="explorer.html">Open the network explorer →</a></p>
+</section>
+
+{% for t in order %}
+  {% if groups.get(t) %}
+  <section class="browse-group">
+    <h2>{{ type_label.get(t, t.title()) }}<span class="count">{{ groups[t]|length }}</span></h2>
+    <ul class="entity-grid">
+      {% for ent in groups[t] %}
+        <li><a href="entity/{{ safe_id(ent.id) }}.html">{{ ent.name }}</a></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+{% endfor %}
+{% endblock %}
