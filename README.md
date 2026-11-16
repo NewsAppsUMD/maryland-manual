@@ -28,16 +28,54 @@ make datasette                       # browse manual.db as a QA console
 make test                            # fixtures + ground-truth assertions
 ```
 
+## Officials dataset
+
+A list of current state and local office-holders (elected and appointed) with
+party, district and term where the Manual gives them: the General Assembly,
+constitutional officers and cabinet, department and independent-agency heads,
+judges, every state and county board, commission and task force, county
+governments (executive, council or commissioners, State's Attorney, Sheriff,
+Clerk, Register of Wills, Orphans' Court, Board of Education) and all
+municipal mayors and councils. Rank-and-file staff are left out.
+
+```bash
+export MDMANUAL_CONTACT="you@example.org"   # optional: identifies you in the User-Agent
+make crawl-officials   # roster pages + linked biographies, ~2 hours at 1 req/sec, cached
+make officials         # -> data/officials.csv and the officeholders table in data/manual.db
+```
+
+One row per person-office; vacancies are rows with `is_vacancy = 1`. Each row
+keeps the roster line it came from (`evidence`) and its page (`source_url`).
+`data/officials_coverage.txt` summarizes field coverage and lists pages that
+produced no rows. Legislative committee seats are `record_type = 'committee'`.
+
+Known limits:
+
+- The Manual is the only source. Term years are as published, and some are
+  stale (holdovers still showing 2023 or 2024; pages not yet updated after the
+  November 2026 election).
+- `term_end_year` is the year the term expires. `term_start` exists only where a
+  biography page gives a "since" date, or for legislators (January 11, 2023).
+- Party is shown only for partisan offices and a few boards. It is filled from
+  biography pages where the roster omits it (`party_source = 'bio'`). Judges,
+  school boards and most appointees have none.
+- People without a Manual biography get a per-body id
+  (`person:<name-slug>@<body-slug>`), so one person on several boards appears
+  as several people. Linked people share `person:msaNNNNN` across rows.
+
 ## Layout
 
 ```
 crawler/     polite BFS crawler + scope rules (crawl.py, seeds.py)
 extract/     HTML -> records: patterns.py, parse_county.py, parse_agency.py,
-             parse_index.py, links.py
-graph/       schema.sql, load.py (records -> SQLite), peers.py (derived edges)
+             parse_index.py; officials: roster.py (shared roster grammar),
+             parse_legislature.py, parse_bio.py, officials.py (orchestrator)
+graph/       schema.sql, load.py (records -> SQLite), peers.py (derived edges),
+             officials.py (officeholders table + CSV)
 site/        build.py (SQLite -> static HTML + JSON), templates/, static/
 enrich/      LLM relation + topic tagging (Claude Batch API) — v0.3
-tests/       fixtures/ (committed sample HTML), test_parsers.py, test_ground_truth.py
+tests/       fixtures/ (committed sample HTML), test_parsers.py, test_ground_truth.py,
+             test_officials.py, test_officials_ground_truth.py
 data/        cache/ (raw HTML mirror, gitignored), manual.db (rebuildable)
 ```
 

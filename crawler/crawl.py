@@ -8,6 +8,10 @@ Design goals:
   * Be a good citizen: one request/second, identifying User-Agent, honor the
     fetch/record/skip dispositions.
 
+Pages are cached as raw bytes: the site mixes UTF-8 (some with a BOM) and
+cp1252 with no declared charset, so decoding happens at read time via
+extract.patterns.decode_page().
+
 The crawl manifest (what we fetched, status, hash, where we found it) lives in
 data/cache/crawl.db so it survives manual.db rebuilds. The parse stage reads the
 cache directory plus this manifest.
@@ -17,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import sqlite3
 import sys
 import time
@@ -27,11 +32,17 @@ from urllib.parse import urlparse
 import httpx
 from bs4 import BeautifulSoup
 
+from extract.patterns import decode_page
+
 from . import seeds
 
 CACHE_DIR = Path("data/cache")
 MANIFEST = CACHE_DIR / "crawl.db"
-USER_AGENT = "maryland-manual-network/0.1 (dpwillis@umd.edu; journalism research)"
+# Set MDMANUAL_CONTACT (an email or URL) so the Archives can reach you.
+_CONTACT = os.environ.get("MDMANUAL_CONTACT", "").strip()
+USER_AGENT = "maryland-manual-network/0.1 (journalism research" + (
+    f"; {_CONTACT})" if _CONTACT else ")"
+)
 DELAY_SECONDS = 1.0
 
 MANIFEST_SCHEMA = """
@@ -63,6 +74,10 @@ def cache_path_for(url: str) -> Path:
         qhash = hashlib.sha1(parsed.query.encode()).hexdigest()[:8]
         rel = f"{rel}.q{qhash}"
     return CACHE_DIR / rel
+
+
+def read_cached(path: str | Path) -> str:
+    return decode_page(Path(path).read_bytes())
 
 
 def open_manifest() -> sqlite3.Connection:
@@ -120,13 +135,22 @@ def crawl(profile: str, limit: int | None = None, refresh: bool = False) -> None
         timeout=30.0,
     )
 
-    queue: deque[tuple[str, str]] = deque()
+    max_depth = seeds.PROFILE_MAX_DEPTH.get(profile)
+    queue: deque[tuple[str, str, int]] = deque()
     enqueued: set[str] = set()
     for url in seeds.seed_urls(profile):
         norm = seeds.normalize(url)
         if norm and norm not in enqueued:
             enqueued.add(norm)
-            queue.append((norm, "seed"))
+            queue.append((norm, "seed", 0))
+
+    def follow(html: str, base: str, depth: int) -> None:
+        if max_depth is not None and depth >= max_depth:
+            return
+        for link in extract_links(html, base):
+            if link not in enqueued:
+                enqueued.add(link)
+                queue.append((link, base, depth + 1))
 
     fetched = 0
     last_request = 0.0
@@ -136,11 +160,12 @@ def crawl(profile: str, limit: int | None = None, refresh: bool = False) -> None
             print(f"Hit limit={limit}, stopping.")
             break
 
-        url, source = queue.popleft()
-        disposition = seeds.classify(url)
+        url, source, depth = queue.popleft()
+        disposition = seeds.classify(url, profile)
 
         if disposition in ("record_only", "skip"):
-            record(conn, url, disposition=disposition, discovered_from=source)
+            if disposition == "record_only":
+                record(conn, url, disposition=disposition, discovered_from=source)
             continue
 
         # fetch_follow or fetch_only
@@ -148,11 +173,7 @@ def crawl(profile: str, limit: int | None = None, refresh: bool = False) -> None
         if not refresh and already_have(conn, url):
             # Use cached copy to discover links (only if we follow).
             if disposition == "fetch_follow" and cpath.exists():
-                html = cpath.read_text(errors="replace")
-                for link in extract_links(html, url):
-                    if link not in enqueued:
-                        enqueued.add(link)
-                        queue.append((link, url))
+                follow(read_cached(cpath), url, depth)
             continue
 
         # Rate limit.
@@ -171,21 +192,18 @@ def crawl(profile: str, limit: int | None = None, refresh: bool = False) -> None
 
         fetched += 1
         ctype = resp.headers.get("content-type", "")
-        body = resp.text if "text" in ctype or "html" in ctype else ""
+        is_text = "text" in ctype or "html" in ctype
         sha = hashlib.sha256(resp.content).hexdigest()
 
-        if resp.status_code == 200 and body:
+        if resp.status_code == 200 and is_text and resp.content:
             cpath.parent.mkdir(parents=True, exist_ok=True)
-            cpath.write_text(body, errors="replace")
+            cpath.write_bytes(resp.content)
             record(conn, url, cache_path=str(cpath), status=200,
                    content_type=ctype, sha256=sha, disposition=disposition,
                    discovered_from=source, fetched_at=time.time())
-            print(f"[{fetched:5d}] {resp.status_code} {url}")
+            print(f"[{fetched:5d}] {resp.status_code} d{depth} {url}")
             if disposition == "fetch_follow":
-                for link in extract_links(body, url):
-                    if link not in enqueued:
-                        enqueued.add(link)
-                        queue.append((link, url))
+                follow(read_cached(cpath), url, depth)
         else:
             record(conn, url, status=resp.status_code, content_type=ctype,
                    sha256=sha, disposition=disposition, discovered_from=source,

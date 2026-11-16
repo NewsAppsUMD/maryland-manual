@@ -8,6 +8,7 @@ tag soup, except where a link target is the payload.
 
 from __future__ import annotations
 
+import html as _html
 import re
 import unicodedata
 
@@ -67,6 +68,32 @@ APPOINTMENT_RE = re.compile(
     r"(?P<consent>\s+with\s+Senate\s+advice\s*&?\s*consent)?"
     r"(?:[^.\n]*?to\s+(?P<term>\d+)-year terms?)?",
 )
+
+
+def decode_page(raw: bytes) -> str:
+    """Decode a cached Manual page.
+
+    The server declares no charset. Pages are UTF-8 (sometimes with a BOM) or
+    cp1252 (raw bytes like 0x92 for an apostrophe). Strict UTF-8 first, then
+    cp1252, then latin-1 as a lossless last resort. Entities are left in place
+    for the HTML parser to resolve.
+    """
+    if raw.startswith(b"\xef\xbb\xbf"):
+        raw = raw[3:]
+    for enc in ("utf-8", "cp1252"):
+        try:
+            return raw.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("latin-1")
+
+
+def unescape(text: str) -> str:
+    """Resolve HTML entities, including double-escaped ones like &amp;#39;."""
+    prev = None
+    while prev != text:
+        prev, text = text, _html.unescape(text)
+    return text
 
 
 def slugify(text: str) -> str:

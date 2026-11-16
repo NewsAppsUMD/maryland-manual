@@ -1,7 +1,7 @@
 PY ?= python3
 DB = data/manual.db
 
-.PHONY: help crawl crawl-mvp parse load peers site serve datasette test clean
+.PHONY: help crawl crawl-mvp crawl-officials officials parse load peers site serve datasette test clean
 
 help:
 	@echo "Targets:"
@@ -13,6 +13,8 @@ help:
 	@echo "  site        Build the static site into site/dist/"
 	@echo "  serve       Serve the built site locally"
 	@echo "  datasette   Open manual.db in Datasette (QA console)"
+	@echo "  crawl-officials  Crawl roster pages + bios for the officials dataset"
+	@echo "  officials   Build data/officials.csv and the officeholders table"
 	@echo "  test        Run the test suite"
 
 crawl-mvp:
@@ -20,6 +22,12 @@ crawl-mvp:
 
 crawl:
 	$(PY) -m crawler.crawl --profile full
+
+crawl-officials:
+	$(PY) -m crawler.crawl --profile officials
+
+officials:
+	$(PY) -m graph.officials
 
 load:
 	$(PY) -m graph.load
