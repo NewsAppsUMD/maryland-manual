@@ -45,7 +45,7 @@ def parse_all() -> tuple[list[Entity], list[Edge], dict]:
         p = Path(cache_path)
         if not p.exists():
             continue
-        html = p.read_text(errors="replace")
+        html = patterns.decode_page(p.read_bytes())
         result = dispatch(url, html, reg)
         if result is None:
             continue

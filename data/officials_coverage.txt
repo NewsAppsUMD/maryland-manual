@@ -1,0 +1,25 @@
+pages parsed: 1078  bios: 950  rows: 19733
+
+jurisdiction_level: state=10808, county=7842, municipal=1083
+branch: executive=16240, legislative=1787, municipal=1083, judicial=623
+record_type: office=18634, committee=1099
+selection_method: appointed=14901, ex officio=2200, elected=1642, other=398, (blank)=391, appointed/elected=201
+party: (blank)=18087, Democrat=1084, Republican=549, Unaffiliated=8, Independent=5
+
+people rows: 18509  vacancies: 1224
+  with party: 1646
+  with district: 706
+  with term_end_year: 10354
+  with term_start: 1117
+  with bio_url: 1977
+  with appointing_authority: 16212
+
+pages with no rows (8):
+  https://msa.maryland.gov/msa/mdmanual/08conoff/attorney/html/06aga.html
+  https://msa.maryland.gov/msa/mdmanual/08conoff/coord/community/html/08comma.html
+  https://msa.maryland.gov/msa/mdmanual/08conoff/coord/community/html/08commh.html
+  https://msa.maryland.gov/msa/mdmanual/08conoff/coord/community/html/08commr.html
+  https://msa.maryland.gov/msa/mdmanual/08conoff/coord/html/09grantsr.html
+  https://msa.maryland.gov/msa/mdmanual/16dhmh/mha/html/mhaf.html
+  https://msa.maryland.gov/msa/mdmanual/19dit/html/dito.html
+  https://msa.maryland.gov/msa/mdmanual/25ind/html/62pemployh.html

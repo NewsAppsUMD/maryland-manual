@@ -12,7 +12,15 @@ from pathlib import Path
 import pytest
 
 DB = Path("data/manual.db")
-pytestmark = pytest.mark.skipif(not DB.exists(),
+def _graph_built() -> bool:
+    if not DB.exists():
+        return False
+    with sqlite3.connect(DB) as c:
+        return c.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='entities'").fetchone() is not None
+
+
+pytestmark = pytest.mark.skipif(not _graph_built(),
                                 reason="data/manual.db not built (run `make load`)")
 
 

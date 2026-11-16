@@ -8,6 +8,8 @@ set of 24 jurisdictions. Baltimore is deliberately ambiguous in English
 
 from __future__ import annotations
 
+from .patterns import decode_page
+
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -93,7 +95,7 @@ def load_registry(index_path=None) -> Registry:
     path = index_path or COUNTY_INDEX
     if not path.exists():
         return reg
-    soup = BeautifulSoup(path.read_text(errors="replace"), "lxml")
+    soup = BeautifulSoup(decode_page(path.read_bytes()), "lxml")
     for a in soup.find_all("a", href=True):
         m = patterns.COUNTY_URL_RE.search(a["href"])
         if not m:
